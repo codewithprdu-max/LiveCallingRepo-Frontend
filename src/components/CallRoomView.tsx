@@ -190,13 +190,6 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
         overflow: 'hidden',
         background: '#070a10',
       }}>
-        {/* Hidden audio sinks for audio streams (ensures audio plays in all modes, including audio-only calls) */}
-        <div style={{ display: 'none' }} aria-hidden="true">
-          {remoteParticipants.map((p) => (
-            <AudioSinkElement key={p.id} viewElement={p.viewElement} />
-          ))}
-        </div>
-
         {/* Stage Content */}
         <div style={{
           flex: 1,
@@ -619,7 +612,26 @@ const RemoteParticipantTile: React.FC<{
   useEffect(() => {
     if (containerRef.current && participant.viewElement) {
       containerRef.current.innerHTML = '';
+      participant.viewElement.style.width = '100%';
+      participant.viewElement.style.height = '100%';
+      participant.viewElement.style.position = 'absolute';
+      participant.viewElement.style.top = '0';
+      participant.viewElement.style.left = '0';
       containerRef.current.appendChild(participant.viewElement);
+
+      const video = participant.viewElement.querySelector('video');
+      if (video) {
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        video.autoplay = true;
+        video.playsInline = true;
+        video.play().catch((err) => console.warn('Remote video play error:', err));
+
+        video.onloadedmetadata = () => {
+          video.play().catch(() => {});
+        };
+      }
     }
   }, [participant.viewElement]);
 
@@ -658,24 +670,11 @@ const RemoteParticipantTile: React.FC<{
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
+        zIndex: 10,
       }}>
         <span>{name}</span>
         {participant.hasAudio && <Volume2 size={14} color="var(--success)" />}
       </div>
     </div>
   );
-};
-
-// Subcomponent to safely attach audio media into DOM for audio-only calls
-const AudioSinkElement: React.FC<{ viewElement: HTMLElement | null }> = ({ viewElement }) => {
-  const mountRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (mountRef.current && viewElement) {
-      mountRef.current.innerHTML = '';
-      mountRef.current.appendChild(viewElement);
-    }
-  }, [viewElement]);
-
-  return <div ref={mountRef} />;
 };

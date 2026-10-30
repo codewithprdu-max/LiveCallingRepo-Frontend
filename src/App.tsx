@@ -8,7 +8,7 @@ import { LoginView } from './components/LoginView';
 import { IncomingCallModal } from './components/IncomingCallModal';
 import { PreCallLobby } from './components/PreCallLobby';
 import { CallRoomView } from './components/CallRoomView';
-import type { Call, CallType } from './types';
+import { normalizeCall, type Call, type CallType } from './types';
 import { Loader2 } from 'lucide-react';
 
 const MainApplication: React.FC = () => {
@@ -67,12 +67,13 @@ const MainApplication: React.FC = () => {
 
   const handleAnswerIncomingCall = async (incoming: Call) => {
     try {
-      const isAudio = incoming.callType === 'Audio';
+      const normalized = normalizeCall(incoming);
+      const isAudio = normalized.callType === 'Audio';
       setInitialAudio(true);
       setInitialVideo(!isAudio);
       setInLobby(false);
       setInCallRoom(true);
-      await answerCall(incoming);
+      await answerCall(normalized);
     } catch (err: any) {
       alert(err.message || 'Failed to answer incoming call');
       setInCallRoom(false);

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { Call, CallType } from '../types';
+import { normalizeCall, type Call, type CallType } from '../types';
 import { api } from '../services/api';
 import { signalRService } from '../services/signalrService';
 import { useAuth } from './AuthContext';
@@ -89,7 +89,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubInvitation = signalRService.onInvitation((call) => {
       // If we are already on an active call, ignore or show
       if (!activeCall) {
-        setIncomingCall(call);
+        setIncomingCall(normalizeCall(call));
         startRingtone();
       }
     });
@@ -122,14 +122,14 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubJoined = signalRService.onParticipantJoined((data) => {
       const incomingId = data.callId || (data.call as any)?.id;
       if (activeCall && (activeCall.id === incomingId || activeCall.id === data.callId)) {
-        setActiveCall(data.call);
+        setActiveCall(normalizeCall(data.call));
       }
     });
 
     const unsubLeft = signalRService.onParticipantLeft((data) => {
       const incomingId = data.callId || (data.call as any)?.id;
       if (activeCall && (activeCall.id === incomingId || activeCall.id === data.callId)) {
-        setActiveCall(data.call);
+        setActiveCall(normalizeCall(data.call));
       }
     });
 
@@ -145,7 +145,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, activeCall, incomingCall]);
 
   const startCall = async (title: string, callType: CallType, participantIds: string[]): Promise<Call> => {
-    const call = await api.createCall(title, callType, participantIds);
+    const rawCall = await api.createCall(title, callType, participantIds);
+    const call = normalizeCall(rawCall);
     await signalRService.joinRoom(call.id);
     setActiveCall(call);
     return call;
@@ -156,7 +157,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIncomingCall(null);
     const updatedCall = await api.joinCall(call.id);
     await signalRService.joinRoom(call.id);
-    setActiveCall(updatedCall);
+    setActiveCall(normalizeCall(updatedCall));
   };
 
   const rejectCall = async (callId: string): Promise<void> => {

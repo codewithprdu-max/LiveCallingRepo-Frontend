@@ -283,6 +283,12 @@ export class LiveSwitchService {
 
       const notifyParticipantAdded = () => {
         const view = remoteMedia.getView() as HTMLElement | null;
+        if (view) {
+          view.style.width = '100%';
+          view.style.height = '100%';
+          view.style.position = 'relative';
+          view.style.display = 'block';
+        }
         this.callbacks.onRemoteParticipantAdded?.({
           id: connectionId,
           userId,
@@ -292,6 +298,14 @@ export class LiveSwitchService {
           hasVideo,
         });
       };
+
+      try {
+        remoteMedia.addOnVideoSizeChange((_size: any) => {
+          notifyParticipantAdded();
+        });
+      } catch {
+        // Ignore if not supported
+      }
 
       downstream.addOnStateChange((conn: any) => {
         if (conn.getState() === liveswitch.ConnectionState.Connected) {

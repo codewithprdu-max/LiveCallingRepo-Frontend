@@ -31,13 +31,37 @@ export function useLiveSwitchCall({
   const isCancelledRef = useRef(false);
   const [localMediaView, setLocalMediaView] = useState<HTMLElement | null>(null);
 
+  const attachLocalMediaView = useCallback((view: HTMLElement, container: HTMLDivElement) => {
+    container.innerHTML = '';
+    view.style.width = '100%';
+    view.style.height = '100%';
+    view.style.position = 'absolute';
+    view.style.top = '0';
+    view.style.left = '0';
+    container.appendChild(view);
+
+    const video = view.querySelector('video');
+    if (video) {
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.objectFit = 'cover';
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.play().catch((err) => console.warn('Local video play error:', err));
+
+      video.onloadedmetadata = () => {
+        video.play().catch(() => {});
+      };
+    }
+  }, []);
+
   // Keep local video preview container synchronized with localMediaView
   useEffect(() => {
     if (localVideoContainerRef.current && localMediaView) {
-      localVideoContainerRef.current.innerHTML = '';
-      localVideoContainerRef.current.appendChild(localMediaView);
+      attachLocalMediaView(localMediaView, localVideoContainerRef.current);
     }
-  }, [localMediaView]);
+  }, [localMediaView, attachLocalMediaView]);
 
   // Initialize and join call
   const startCall = useCallback(async () => {
@@ -48,7 +72,7 @@ export function useLiveSwitchCall({
     setConnectionState('registering');
     setStatusMessage('Connecting to LiveSwitch Cloud...');
 
-    const isAudioOnly = call.callType === 'Audio';
+    const isAudioOnly = call.callType === 'Audio' || (call.callType as any) === 0 || (call.callType as any) === '0';
     const wantVideo = !isAudioOnly && initialVideoEnabled;
     const wantAudio = initialAudioEnabled;
 
@@ -80,6 +104,10 @@ export function useLiveSwitchCall({
 
       serviceRef.current = service;
 
+      // Small delay on Windows to ensure camera hardware handle is released from preview lobby
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      if (isCancelledRef.current) return;
+
       // 2. Fetch LiveSwitch registration token from backend (.NET 10 API)
       const registerRes = await api.getRegisterToken(service.getDeviceId(), service.getClientId());
       if (isCancelledRef.current) return;
@@ -109,8 +137,7 @@ export function useLiveSwitchCall({
       if (localView) {
         setLocalMediaView(localView);
         if (localVideoContainerRef.current) {
-          localVideoContainerRef.current.innerHTML = '';
-          localVideoContainerRef.current.appendChild(localView);
+          attachLocalMediaView(localView, localVideoContainerRef.current);
         }
       }
 
@@ -148,7 +175,7 @@ export function useLiveSwitchCall({
 
   // Toggle Video Mute
   const toggleVideo = useCallback(() => {
-    if (!serviceRef.current || call?.callType === 'Audio') return;
+    if (!serviceRef.current || call?.callType === 'Audio' || (call?.callType as any) === 0 || (call?.callType as any) === '0') return;
     const current = isVideoMuted;
     serviceRef.current.setVideoMuted(!current);
     setIsVideoMuted(!current);
