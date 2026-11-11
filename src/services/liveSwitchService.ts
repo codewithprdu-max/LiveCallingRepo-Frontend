@@ -29,6 +29,7 @@ export class LiveSwitchService {
   private clientId: string;
   private isDestroyed = false;
   private callbacks: LiveSwitchCallbacks = {};
+  private savedCameraTrack: MediaStreamTrack | null = null;
 
   // Track action handlers for unbinding
   private remoteUpstreamOpenHandler: liveswitch.IAction1<liveswitch.ConnectionInfo> | null = null;
@@ -368,6 +369,207 @@ export class LiveSwitchService {
 
   getVideoMuted(): boolean {
     return this.localMedia ? this.localMedia.getVideoMuted() : false;
+  }
+
+  async startScreenShare(displayStream: MediaStream): Promise<HTMLElement | null> {
+    if (!this.localMedia) {
+      throw new Error('Local media is not active');
+    }
+
+    const screenTrack = displayStream.getVideoTracks()[0];
+    if (!screenTrack) {
+      throw new Error('No video track found in screen share stream');
+    }
+
+    // Save existing webcam track if present
+    const videoTrackWrapper = (this.localMedia as any).getVideoTrack ? (this.localMedia as any).getVideoTrack() : null;
+    const internalTrack = videoTrackWrapper && videoTrackWrapper._getInternal ? videoTrackWrapper._getInternal() : videoTrackWrapper;
+
+    if (internalTrack && typeof internalTrack._getMediaStreamTrack === 'function') {
+      const currentTrack = internalTrack._getMediaStreamTrack();
+      if (currentTrack && currentTrack !== screenTrack) {
+        this.savedCameraTrack = currentTrack;
+      }
+    }
+
+    // 1. LiveSwitch internal track update (calls output.replaceLocalTrack on all outputs)
+    if (internalTrack && typeof internalTrack._setMediaStreamTrack === 'function') {
+      try {
+        internalTrack._setMediaStreamTrack(screenTrack);
+      } catch (e) {
+        console.warn('Error in internalTrack._setMediaStreamTrack:', e);
+      }
+    }
+
+    // 2. Direct RTCRtpSender track replacement across active WebRTC peer connections
+    try {
+      if (internalTrack && typeof internalTrack.getOutputs === 'function') {
+        const outputs = internalTrack.getOutputs() || [];
+        for (const output of outputs) {
+          const conn = output.getConnection ? output.getConnection() : null;
+          const pc: RTCPeerConnection | null =
+            conn?.getNativePeerConnection ? conn.getNativePeerConnection() :
+            conn?._nativePeerConnection || null;
+          if (pc && pc.getSenders) {
+            for (const sender of pc.getSenders()) {
+              if (sender.track && sender.track.kind === 'video') {
+                await sender.replaceTrack(screenTrack);
+              }
+            }
+          }
+        }
+      }
+
+      if (this.upstreamConnection) {
+        const connAny = this.upstreamConnection as any;
+        const pc: RTCPeerConnection | null =
+          connAny.getNativePeerConnection ? connAny.getNativePeerConnection() :
+          connAny._internal?._nativePeerConnection ||
+          connAny._nativePeerConnection || null;
+        if (pc && pc.getSenders) {
+          for (const sender of pc.getSenders()) {
+            if (sender.track && sender.track.kind === 'video') {
+              await sender.replaceTrack(screenTrack);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not directly replace RTCRtpSender:', err);
+    }
+
+    // 3. Update local preview <video> element
+    const view = this.localMedia.getView() as HTMLElement | null;
+    if (view) {
+      const videoEl = view.querySelector('video');
+      if (videoEl) {
+        videoEl.srcObject = new MediaStream([screenTrack]);
+        videoEl.play().catch(() => {});
+      }
+    }
+
+    return view;
+  }
+
+  async stopScreenShare(cameraStream: MediaStream | null): Promise<HTMLElement | null> {
+    if (!this.localMedia) return null;
+
+    let targetCamTrack: MediaStreamTrack | null = null;
+    if (cameraStream && cameraStream.getVideoTracks().length > 0) {
+      targetCamTrack = cameraStream.getVideoTracks()[0];
+    } else if (this.savedCameraTrack && this.savedCameraTrack.readyState === 'live') {
+      targetCamTrack = this.savedCameraTrack;
+    } else {
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        targetCamTrack = newStream.getVideoTracks()[0];
+      } catch (e) {
+        console.warn('Could not re-acquire webcam after screen share:', e);
+      }
+    }
+
+    if (!targetCamTrack) return this.localMedia.getView() as HTMLElement | null;
+
+    const videoTrackWrapper = (this.localMedia as any).getVideoTrack ? (this.localMedia as any).getVideoTrack() : null;
+    const internalTrack = videoTrackWrapper && videoTrackWrapper._getInternal ? videoTrackWrapper._getInternal() : videoTrackWrapper;
+
+    if (internalTrack && typeof internalTrack._setMediaStreamTrack === 'function') {
+      try {
+        internalTrack._setMediaStreamTrack(targetCamTrack);
+      } catch (e) {
+        console.warn('Error restoring camera in internalTrack:', e);
+      }
+    }
+
+    try {
+      if (internalTrack && typeof internalTrack.getOutputs === 'function') {
+        const outputs = internalTrack.getOutputs() || [];
+        for (const output of outputs) {
+          const conn = output.getConnection ? output.getConnection() : null;
+          const pc: RTCPeerConnection | null =
+            conn?.getNativePeerConnection ? conn.getNativePeerConnection() :
+            conn?._nativePeerConnection || null;
+          if (pc && pc.getSenders) {
+            for (const sender of pc.getSenders()) {
+              if (sender.track && sender.track.kind === 'video') {
+                await sender.replaceTrack(targetCamTrack);
+              }
+            }
+          }
+        }
+      }
+
+      if (this.upstreamConnection) {
+        const connAny = this.upstreamConnection as any;
+        const pc: RTCPeerConnection | null =
+          connAny.getNativePeerConnection ? connAny.getNativePeerConnection() :
+          connAny._internal?._nativePeerConnection ||
+          connAny._nativePeerConnection || null;
+        if (pc && pc.getSenders) {
+          for (const sender of pc.getSenders()) {
+            if (sender.track && sender.track.kind === 'video') {
+              await sender.replaceTrack(targetCamTrack);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not restore camera in RTCRtpSender:', err);
+    }
+
+    // Restore local preview <video> element
+    const view = this.localMedia.getView() as HTMLElement | null;
+    if (view) {
+      const videoEl = view.querySelector('video');
+      if (videoEl) {
+        videoEl.srcObject = new MediaStream([targetCamTrack]);
+        videoEl.play().catch(() => {});
+      }
+    }
+
+    this.savedCameraTrack = null;
+    return view;
+  }
+
+  async switchAudioDevice(deviceId: string): Promise<void> {
+    if (!this.localMedia) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: deviceId } },
+        video: false,
+      });
+      await new Promise((resolve, reject) => {
+        this.localMedia!.changeAudioMediaStream(stream, deviceId, 'Microphone', true)
+          .then(() => resolve(null))
+          .fail((err: any) => reject(new Error(err?.getDescription?.() || 'Failed to change audio device')));
+      });
+    } catch (err) {
+      console.error('Error switching audio device:', err);
+      throw err;
+    }
+  }
+
+  async switchVideoDevice(deviceId: string): Promise<HTMLElement | null> {
+    if (!this.localMedia) return null;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { deviceId: { exact: deviceId } },
+      });
+      await new Promise((resolve, reject) => {
+        this.localMedia!.changeVideoMediaStream(stream, deviceId, 'Camera', true)
+          .then(() => resolve(null))
+          .fail((err: any) => reject(new Error(err?.getDescription?.() || 'Failed to change video device')));
+      });
+      return this.localMedia.getView() as HTMLElement | null;
+    } catch (err) {
+      console.error('Error switching video device:', err);
+      throw err;
+    }
+  }
+
+  getLocalMediaView(): HTMLElement | null {
+    return this.localMedia ? (this.localMedia.getView() as HTMLElement | null) : null;
   }
 
   async stopLocalMedia() {
