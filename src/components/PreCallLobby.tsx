@@ -128,17 +128,19 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
       <div className="glass-panel" style={{
         width: '100%',
         maxWidth: '540px',
-        padding: '32px',
+        maxHeight: '92vh',
+        overflowY: 'auto',
+        padding: 'clamp(20px, 4vw, 32px)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '20px',
+        gap: '18px',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '6px' }}>
+          <h2 style={{ fontSize: 'clamp(1.3rem, 3vw, 1.6rem)', fontWeight: 700, marginBottom: '6px' }}>
             Ready to Join?
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
             {call.title} ({call.callType} Call)
           </p>
         </div>
@@ -146,7 +148,7 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
         {/* Video Preview or Audio Wave Card */}
         <div style={{
           width: '100%',
-          height: '240px',
+          height: 'clamp(160px, 28vh, 230px)',
           borderRadius: '16px',
           background: 'rgba(0, 0, 0, 0.4)',
           border: '1px solid var(--border-color)',
@@ -274,7 +276,7 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
             <span>Select Media Devices</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: !isAudioOnly ? '1fr 1fr' : '1fr', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: !isAudioOnly ? 'repeat(auto-fit, minmax(200px, 1fr))' : '1fr', gap: '10px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', color: 'var(--text-secondary)' }}>
                 Microphone

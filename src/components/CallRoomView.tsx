@@ -122,11 +122,20 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
       }));
     });
 
+    const unsubEnded = signalRService.onEnded((endedCall) => {
+      const endedId = endedCall?.id || (endedCall as any)?.Id;
+      if (!endedId || endedId === call.id) {
+        console.log('Call ended SignalR received in CallRoomView. Ending call.');
+        endCall();
+      }
+    });
+
     return () => {
       unsubMessage();
       unsubMedia();
+      unsubEnded();
     };
-  }, [call.id, showChatDrawer]);
+  }, [call.id, showChatDrawer, endCall]);
 
   // Auto-scroll chat drawer
   useEffect(() => {
@@ -216,64 +225,57 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
       overflow: 'hidden',
     }}>
       {/* Top Header Bar */}
-      <div style={{
-        height: '64px',
-        padding: '0 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid var(--border-color)',
-        background: 'rgba(10, 13, 20, 0.8)',
-        backdropFilter: 'blur(10px)',
-      }}>
+      <div className="call-header">
         {/* Title & Call Type */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+          <h2 className="call-header-title" title={call.title}>
             {call.title}
           </h2>
           <span style={{
-            padding: '3px 10px',
+            padding: '3px 8px',
             borderRadius: '999px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
             background: isAudioOnly ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
             color: isAudioOnly ? 'var(--accent-primary)' : 'var(--success)',
             border: `1px solid ${isAudioOnly ? 'rgba(99, 102, 241, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
           }}>
-            {call.callType} Call
+            {call.callType}
           </span>
           {isScreenSharing && (
             <span style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              padding: '3px 10px',
+              padding: '3px 8px',
               borderRadius: '999px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
               background: 'rgba(16, 185, 129, 0.2)',
               color: 'var(--success)',
               border: '1px solid rgba(16, 185, 129, 0.4)',
             }}>
               <ScreenShare size={12} />
-              <span>You are Sharing Screen</span>
+              <span className="hide-on-mobile">Sharing Screen</span>
             </span>
           )}
         </div>
 
         {/* Timer & Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {connectionState === 'connected' && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               fontFamily: 'monospace',
-              fontSize: '1rem',
+              fontSize: '0.9rem',
               fontWeight: 700,
               color: 'var(--text-primary)',
               background: 'rgba(0, 0, 0, 0.4)',
-              padding: '4px 12px',
+              padding: '4px 10px',
               borderRadius: '6px',
               border: '1px solid var(--border-color)',
             }}>
@@ -282,21 +284,23 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
             </div>
           )}
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            padding: '4px 12px',
-            borderRadius: '999px',
-            background: connectionState === 'connected' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-            color: connectionState === 'connected' ? 'var(--success)' : 'var(--warning)',
-            border: `1px solid ${connectionState === 'connected' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-          }}>
-            {connectionState === 'connected' && <ShieldCheck size={14} />}
-            {connectionState !== 'connected' && connectionState !== 'failed' && <Loader2 size={14} className="animate-spin" />}
-            {connectionState === 'failed' && <AlertCircle size={14} />}
+          <div
+            className="hide-on-mobile"
+            style={{
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              padding: '4px 10px',
+              borderRadius: '999px',
+              background: connectionState === 'connected' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              color: connectionState === 'connected' ? 'var(--success)' : 'var(--warning)',
+              border: `1px solid ${connectionState === 'connected' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+            }}
+          >
+            {connectionState === 'connected' && <ShieldCheck size={13} />}
+            {connectionState !== 'connected' && connectionState !== 'failed' && <Loader2 size={13} className="animate-spin" />}
+            {connectionState === 'failed' && <AlertCircle size={13} />}
             <span>{statusMessage || connectionState}</span>
           </div>
 
@@ -316,15 +320,16 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
-              padding: '6px 12px',
+              padding: '6px 10px',
               cursor: 'pointer',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
+              transition: 'background 0.15s',
             }}
             title="Open In-Call Chat"
           >
             <MessageSquare size={16} />
-            <span>Chat</span>
+            <span className="hide-on-mobile">Chat</span>
             {unreadChatCount > 0 && !showChatDrawer && (
               <span style={{
                 position: 'absolute',
@@ -360,14 +365,17 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
-              padding: '6px 12px',
+              padding: '6px 10px',
               cursor: 'pointer',
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
+              transition: 'background 0.15s',
             }}
+            title="Participants"
           >
             <Users size={16} />
-            <span>Participants ({call.participants.length})</span>
+            <span className="hide-on-mobile">Participants ({call.participants.length})</span>
+            <span className="show-on-mobile">({call.participants.length})</span>
           </button>
 
           {/* Settings / Device Selector Button */}
@@ -381,8 +389,9 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
-              padding: '6px 10px',
+              padding: '6px 9px',
               cursor: 'pointer',
+              transition: 'background 0.15s',
             }}
             title="Audio & Video Settings"
           >
@@ -588,19 +597,20 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
               )}
 
               {/* Local User PIP or Grid Card */}
-              <div style={{
-                position: isOneOnOne ? 'absolute' : 'relative',
-                bottom: isOneOnOne ? '24px' : 'auto',
-                right: isOneOnOne ? '24px' : 'auto',
-                width: isOneOnOne ? '260px' : '100%',
-                height: isOneOnOne ? '160px' : '100%',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                background: '#121722',
-                border: isScreenSharing ? '2px solid var(--success)' : '2px solid var(--accent-primary)',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
-                zIndex: 25,
-              }}>
+              <div
+                className={isOneOnOne ? 'call-pip' : ''}
+                style={{
+                  position: isOneOnOne ? 'absolute' : 'relative',
+                  width: isOneOnOne ? undefined : '100%',
+                  height: isOneOnOne ? undefined : '100%',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  background: '#121722',
+                  border: isScreenSharing ? '2px solid var(--success)' : '2px solid var(--accent-primary)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+                  zIndex: 25,
+                }}
+              >
                 {/* Local Video Render Mount */}
                 <div
                   ref={localVideoContainerRef}
@@ -652,26 +662,20 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
 
         {/* Side Participants Drawer */}
         {showParticipantsDrawer && (
-          <div style={{
-            width: '320px',
-            borderLeft: '1px solid var(--border-color)',
-            background: 'rgba(18, 23, 34, 0.95)',
-            backdropFilter: 'blur(16px)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            zIndex: 35,
-          }}>
+          <div className="call-drawer" style={{ padding: '20px', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>
-                In This Room ({call.participants.length})
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} color="var(--accent-primary)" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>
+                  Participants ({call.participants.length})
+                </h3>
+              </div>
               <button
                 onClick={() => setShowParticipantsDrawer(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                title="Close"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -729,15 +733,7 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
 
         {/* Side In-Call Chat Drawer */}
         {showChatDrawer && (
-          <div style={{
-            width: '340px',
-            borderLeft: '1px solid var(--border-color)',
-            background: 'rgba(18, 23, 34, 0.95)',
-            backdropFilter: 'blur(16px)',
-            display: 'flex',
-            flexDirection: 'column',
-            zIndex: 35,
-          }}>
+          <div className="call-drawer">
             <div style={{
               padding: '16px 20px',
               borderBottom: '1px solid var(--border-color)',
@@ -751,9 +747,10 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
               </div>
               <button
                 onClick={() => setShowChatDrawer(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                title="Close"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -876,32 +873,15 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
       </div>
 
       {/* Floating Control Dock */}
-      <div style={{
-        height: '84px',
-        borderTop: '1px solid var(--border-color)',
-        background: 'rgba(10, 13, 20, 0.9)',
-        backdropFilter: 'blur(16px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '16px',
-        padding: '0 24px',
-      }}>
+      <div className="call-control-dock">
         {/* Toggle Mic */}
         <button
           onClick={toggleAudio}
+          className="call-dock-btn"
           style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '50%',
-            border: 'none',
             background: isAudioMuted ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)',
             color: isAudioMuted ? 'var(--danger)' : '#ffffff',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.15s ease',
+            border: isAudioMuted ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
           }}
           title={isAudioMuted ? 'Unmute Microphone' : 'Mute Microphone'}
         >
@@ -912,18 +892,11 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
         {!isAudioOnly && (
           <button
             onClick={toggleVideo}
+            className="call-dock-btn"
             style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '50%',
-              border: 'none',
               background: isVideoMuted ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)',
               color: isVideoMuted ? 'var(--danger)' : '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
+              border: isVideoMuted ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
             }}
             title={isVideoMuted ? 'Turn Camera On' : 'Turn Camera Off'}
           >
@@ -935,18 +908,11 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
         {!isAudioOnly && (
           <button
             onClick={toggleScreenShare}
+            className="call-dock-btn"
             style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '50%',
-              border: 'none',
               background: isScreenSharing ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.1)',
               color: isScreenSharing ? 'var(--success)' : '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
+              border: isScreenSharing ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: isScreenSharing ? '0 0 16px rgba(16, 185, 129, 0.4)' : 'none',
             }}
             title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
@@ -958,27 +924,12 @@ export const CallRoomView: React.FC<CallRoomViewProps> = ({
         {/* End Call / Leave Button */}
         <button
           onClick={endCall}
-          style={{
-            height: '52px',
-            padding: '0 28px',
-            borderRadius: '999px',
-            border: 'none',
-            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-            color: '#ffffff',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)',
-            transition: 'transform 0.15s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          className="call-end-btn"
+          title="End Call"
         >
-          <PhoneOff size={22} />
-          <span>End Call</span>
+          <PhoneOff size={20} />
+          <span className="hide-on-mobile">End Call</span>
+          <span className="show-on-mobile">End</span>
         </button>
       </div>
 

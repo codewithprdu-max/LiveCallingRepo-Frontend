@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { normalizeCall, type Call, type CallType } from '../types';
 import { api } from '../services/api';
 import { signalRService } from '../services/signalrService';
+import { soundService } from '../services/soundService';
 import { useAuth } from './AuthContext';
 
 interface CallContextType {
@@ -21,114 +22,96 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeCall, setActiveCall] = useState<Call | null>(null);
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
 
-  // Web Audio Ringtone Generator
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const ringtoneIntervalRef = useRef<number | null>(null);
+  // Keep fresh references for SignalR callbacks to prevent stale closure issues
+  const activeCallRef = useRef<Call | null>(null);
+  const incomingCallRef = useRef<Call | null>(null);
 
-  const startRingtone = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      audioContextRef.current = new AudioCtx();
+  useEffect(() => {
+    activeCallRef.current = activeCall;
+  }, [activeCall]);
 
-      const playTone = () => {
-        if (!audioContextRef.current || audioContextRef.current.state === 'closed') return;
-        const osc1 = audioContextRef.current.createOscillator();
-        const osc2 = audioContextRef.current.createOscillator();
-        const gain = audioContextRef.current.createGain();
-
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(440, audioContextRef.current.currentTime); // A4
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(480, audioContextRef.current.currentTime); // B4
-
-        gain.gain.setValueAtTime(0.05, audioContextRef.current.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 1.2);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(audioContextRef.current.destination);
-
-        osc1.start();
-        osc2.start();
-        osc1.stop(audioContextRef.current.currentTime + 1.2);
-        osc2.stop(audioContextRef.current.currentTime + 1.2);
-      };
-
-      playTone();
-      ringtoneIntervalRef.current = window.setInterval(playTone, 3000);
-    } catch {
-      // Audio playback may require initial user gesture
-    }
-  };
-
-  const stopRingtone = () => {
-    if (ringtoneIntervalRef.current) {
-      clearInterval(ringtoneIntervalRef.current);
-      ringtoneIntervalRef.current = null;
-    }
-    if (audioContextRef.current) {
-      try {
-        audioContextRef.current.close();
-      } catch {
-        // Ignore
-      }
-      audioContextRef.current = null;
-    }
-  };
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
 
   useEffect(() => {
     if (!user) {
       setActiveCall(null);
       setIncomingCall(null);
-      stopRingtone();
+      soundService.stopAll();
       return;
     }
 
-    // Subscribe to SignalR events
+    // 1. Incoming Call Invitation (Receiver side) -> Play Ringtone
     const unsubInvitation = signalRService.onInvitation((call) => {
-      // If we are already on an active call, ignore or show
-      if (!activeCall) {
-        setIncomingCall(normalizeCall(call));
-        startRingtone();
+      if (!activeCallRef.current) {
+        const normalized = normalizeCall(call);
+        setIncomingCall(normalized);
+        soundService.playRingtone();
       }
     });
 
+    // 2. Call Accepted -> Stop ringback/ringtone
     const unsubAccepted = signalRService.onAccepted((data) => {
+      soundService.stopAll();
       const incomingId = data.callId || (data.call as any)?.id;
-      if (activeCall && (activeCall.id === incomingId || activeCall.id === data.callId)) {
+      if (activeCallRef.current && (activeCallRef.current.id === incomingId || activeCallRef.current.id === data.callId)) {
         setActiveCall((prev) => (prev ? { ...prev, status: 'InProgress' } : null));
       }
     });
 
+    // 3. Call Rejected -> Stop dial tone and end
     const unsubRejected = signalRService.onRejected((data) => {
+      soundService.stopAll();
+      soundService.playCallEndedTone();
       const incomingId = data.callId || (data.call as any)?.id;
-      if (activeCall && (activeCall.id === incomingId || activeCall.id === data.callId) && activeCall.callType !== 'Group') {
+      if (
+        activeCallRef.current &&
+        (activeCallRef.current.id === incomingId || activeCallRef.current.id === data.callId) &&
+        activeCallRef.current.callType !== 'Group'
+      ) {
         alert('The recipient declined the call.');
         setActiveCall(null);
       }
     });
 
+    // 4. Call Ended -> Either party clicked End Call
     const unsubEnded = signalRService.onEnded((call) => {
-      if (activeCall && activeCall.id === call.id) {
+      const endedId = call?.id || (call as any)?.Id;
+      console.log('SignalR CallEnded received for call:', endedId);
+      soundService.stopAll();
+      soundService.playCallEndedTone();
+
+      if (activeCallRef.current && (!endedId || activeCallRef.current.id === endedId)) {
         setActiveCall(null);
       }
-      if (incomingCall && incomingCall.id === call.id) {
+      if (incomingCallRef.current && (!endedId || incomingCallRef.current.id === endedId)) {
         setIncomingCall(null);
-        stopRingtone();
       }
     });
 
+    // 5. Participant Joined
     const unsubJoined = signalRService.onParticipantJoined((data) => {
+      soundService.stopAll();
       const incomingId = data.callId || (data.call as any)?.id;
-      if (activeCall && (activeCall.id === incomingId || activeCall.id === data.callId)) {
+      if (activeCallRef.current && (activeCallRef.current.id === incomingId || activeCallRef.current.id === data.callId)) {
         setActiveCall(normalizeCall(data.call));
       }
     });
 
+    // 6. Participant Left (In 1-on-1 calls, if the other person leaves, automatically end the call for both!)
     const unsubLeft = signalRService.onParticipantLeft((data) => {
       const incomingId = data.callId || (data.call as any)?.id;
-      if (activeCall && (activeCall.id === incomingId || activeCall.id === data.callId)) {
+      const current = activeCallRef.current;
+
+      if (current && (current.id === incomingId || current.id === data.callId)) {
+        if (current.callType !== 'Group' && data.userId && data.userId !== user.id) {
+          console.log('Other participant left the 1-on-1 call. Automatically ending call.');
+          soundService.stopAll();
+          soundService.playCallEndedTone();
+          setActiveCall(null);
+          return;
+        }
         setActiveCall(normalizeCall(data.call));
       }
     });
@@ -140,28 +123,35 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubEnded();
       unsubJoined();
       unsubLeft();
-      stopRingtone();
+      soundService.stopAll();
     };
-  }, [user, activeCall, incomingCall]);
+  }, [user]);
 
+  // Initiate outgoing call -> starts outgoing ringback tone
   const startCall = async (title: string, callType: CallType, participantIds: string[]): Promise<Call> => {
     const rawCall = await api.createCall(title, callType, participantIds);
     const call = normalizeCall(rawCall);
     await signalRService.joinRoom(call.id);
     setActiveCall(call);
+
+    // Play outgoing phone dial/ringback tone for caller
+    soundService.playOutgoingRingback();
     return call;
   };
 
+  // Answer incoming call -> stops ringtone immediately
   const answerCall = async (call: Call): Promise<void> => {
-    stopRingtone();
+    soundService.stopAll();
     setIncomingCall(null);
     const updatedCall = await api.joinCall(call.id);
     await signalRService.joinRoom(call.id);
     setActiveCall(normalizeCall(updatedCall));
   };
 
+  // Reject incoming call -> stops ringtone and notifies caller
   const rejectCall = async (callId: string): Promise<void> => {
-    stopRingtone();
+    soundService.stopAll();
+    soundService.playCallEndedTone();
     setIncomingCall(null);
     try {
       await api.rejectCall(callId);
@@ -170,14 +160,25 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // End call -> notifies both caller and receiver to hang up automatically!
   const hangUp = async (): Promise<void> => {
-    if (activeCall) {
-      const callId = activeCall.id;
+    const call = activeCallRef.current;
+    if (call) {
+      const callId = call.id;
+      soundService.stopAll();
+      soundService.playCallEndedTone();
       try {
-        await api.leaveCall(callId);
-        await signalRService.leaveRoom(callId);
+        // Inform backend to end the call and broadcast CallEnded to all participants
+        await api.endCall(callId);
       } catch (err) {
-        console.error('Error leaving call:', err);
+        console.warn('api.endCall failed, attempting api.leaveCall as fallback:', err);
+        try {
+          await api.leaveCall(callId);
+        } catch {}
+      } finally {
+        try {
+          await signalRService.leaveRoom(callId);
+        } catch {}
       }
       setActiveCall(null);
     }

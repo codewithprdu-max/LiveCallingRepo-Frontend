@@ -55,7 +55,7 @@ export const LoginView: React.FC = () => {
       <div className="glass-panel" style={{
         width: '100%',
         maxWidth: '440px',
-        padding: '36px',
+        padding: 'clamp(20px, 5vw, 36px)',
         position: 'relative',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(99, 102, 241, 0.15)',
       }}>
