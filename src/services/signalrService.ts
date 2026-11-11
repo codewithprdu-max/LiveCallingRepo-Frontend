@@ -1,9 +1,11 @@
 import * as signalR from '@microsoft/signalr';
-import type { Call } from '../types';
+import type { Call, ChatMessage, MediaStateUpdate } from '../types';
 
 export type CallInvitationCallback = (call: Call) => void;
 export type CallStatusCallback = (data: { callId: string; userId?: string; call: Call }) => void;
 export type CallEndedCallback = (call: Call) => void;
+export type CallMessageCallback = (message: ChatMessage) => void;
+export type MediaStateCallback = (data: MediaStateUpdate) => void;
 
 class SignalRService {
   private connection: signalR.HubConnection | null = null;
@@ -15,6 +17,8 @@ class SignalRService {
   private onEndedListeners: Set<CallEndedCallback> = new Set();
   private onParticipantJoinedListeners: Set<CallStatusCallback> = new Set();
   private onParticipantLeftListeners: Set<CallStatusCallback> = new Set();
+  private onMessageListeners: Set<CallMessageCallback> = new Set();
+  private onMediaStateListeners: Set<MediaStateCallback> = new Set();
 
   async connect(token: string): Promise<void> {
     if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
@@ -59,6 +63,14 @@ class SignalRService {
         this.onParticipantLeftListeners.forEach((fn) => fn(data));
       });
 
+      this.connection.on('ReceiveCallMessage', (msg: ChatMessage) => {
+        this.onMessageListeners.forEach((fn) => fn(msg));
+      });
+
+      this.connection.on('ParticipantMediaStateChanged', (data: MediaStateUpdate) => {
+        this.onMediaStateListeners.forEach((fn) => fn(data));
+      });
+
       await this.connection.start();
     } catch (err) {
       console.error('SignalR connection failed:', err);
@@ -90,6 +102,18 @@ class SignalRService {
     }
   }
 
+  async sendCallMessage(callId: string, message: string): Promise<void> {
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+      await this.connection.invoke('SendCallMessage', callId, message);
+    }
+  }
+
+  async updateMediaState(callId: string, isAudioMuted: boolean, isVideoMuted: boolean, isScreenSharing: boolean): Promise<void> {
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+      await this.connection.invoke('UpdateMediaState', callId, isAudioMuted, isVideoMuted, isScreenSharing);
+    }
+  }
+
   onInvitation(cb: CallInvitationCallback): () => void {
     this.onInvitationListeners.add(cb);
     return () => this.onInvitationListeners.delete(cb);
@@ -118,6 +142,16 @@ class SignalRService {
   onParticipantLeft(cb: CallStatusCallback): () => void {
     this.onParticipantLeftListeners.add(cb);
     return () => this.onParticipantLeftListeners.delete(cb);
+  }
+
+  onCallMessage(cb: CallMessageCallback): () => void {
+    this.onMessageListeners.add(cb);
+    return () => this.onMessageListeners.delete(cb);
+  }
+
+  onMediaStateChanged(cb: MediaStateCallback): () => void {
+    this.onMediaStateListeners.add(cb);
+    return () => this.onMediaStateListeners.delete(cb);
   }
 }
 

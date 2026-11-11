@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneCall } from 'lucide-react';
-import type { Call } from '../types';
+import { Mic, MicOff, Video, VideoOff, PhoneCall, Settings } from 'lucide-react';
+import type { Call, MediaDeviceInfoOption } from '../types';
 
 interface PreCallLobbyProps {
   call: Call;
-  onJoin: (audioEnabled: boolean, videoEnabled: boolean) => void;
+  onJoin: (audioEnabled: boolean, videoEnabled: boolean, audioDeviceId?: string, videoDeviceId?: string) => void;
   onCancel: () => void;
 }
 
@@ -14,8 +14,38 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
   const [videoEnabled, setVideoEnabled] = useState(!isAudioOnly);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfoOption[]>([]);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfoOption[]>([]);
+  const [selectedAudioId, setSelectedAudioId] = useState<string>('');
+  const [selectedVideoId, setSelectedVideoId] = useState<string>('');
+
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Enumerate devices once access is permitted
+  const enumerateMediaDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioIns = devices
+        .filter((d) => d.kind === 'audioinput')
+        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Microphone ${i + 1}` }));
+      const videoIns = devices
+        .filter((d) => d.kind === 'videoinput')
+        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }));
+
+      setAudioDevices(audioIns);
+      setVideoDevices(videoIns);
+
+      if (audioIns.length > 0 && !selectedAudioId) {
+        setSelectedAudioId(audioIns[0].deviceId);
+      }
+      if (videoIns.length > 0 && !selectedVideoId) {
+        setSelectedVideoId(videoIns[0].deviceId);
+      }
+    } catch (err) {
+      console.warn('Could not enumerate media devices:', err);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -25,10 +55,12 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
       if (isAudioOnly) return;
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+        const constraints: MediaStreamConstraints = {
+          video: selectedVideoId ? { deviceId: { exact: selectedVideoId } } : true,
           audio: false, // audio preview not played back locally to avoid feedback
-        });
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
         if (!active) {
           stream.getTracks().forEach((t) => t.stop());
@@ -39,6 +71,8 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
         if (previewVideoRef.current) {
           previewVideoRef.current.srcObject = stream;
         }
+
+        await enumerateMediaDevices();
       } catch (err: any) {
         if (active) {
           setPermissionError('Camera access was not granted or device is in use.');
@@ -65,7 +99,7 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
         streamRef.current = null;
       }
     };
-  }, [videoEnabled, isAudioOnly]);
+  }, [videoEnabled, isAudioOnly, selectedVideoId]);
 
   const handleJoin = () => {
     // Release preview stream before handing over to LiveSwitch
@@ -73,7 +107,7 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    onJoin(audioEnabled, videoEnabled);
+    onJoin(audioEnabled, videoEnabled, selectedAudioId, selectedVideoId);
   };
 
   return (
@@ -98,7 +132,7 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '24px',
+        gap: '20px',
       }}>
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '6px' }}>
@@ -112,7 +146,7 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
         {/* Video Preview or Audio Wave Card */}
         <div style={{
           width: '100%',
-          height: '260px',
+          height: '240px',
           borderRadius: '16px',
           background: 'rgba(0, 0, 0, 0.4)',
           border: '1px solid var(--border-color)',
@@ -138,19 +172,19 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
           ) : (
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <div style={{
-                width: '72px',
-                height: '72px',
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
                 background: 'rgba(99, 102, 241, 0.15)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: '16px',
+                marginBottom: '12px',
                 color: 'var(--accent-primary)',
               }}>
-                <Mic size={36} />
+                <Mic size={32} />
               </div>
-              <h4 style={{ fontSize: '1.1rem', marginBottom: '4px' }}>
+              <h4 style={{ fontSize: '1.05rem', marginBottom: '4px' }}>
                 {isAudioOnly ? 'Audio Only Mode' : 'Camera is Disabled'}
               </h4>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
@@ -224,8 +258,83 @@ export const PreCallLobby: React.FC<PreCallLobbyProps> = ({ call, onJoin, onCanc
           )}
         </div>
 
+        {/* Hardware Device Selectors */}
+        <div style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '12px 16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <Settings size={14} />
+            <span>Select Media Devices</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: !isAudioOnly ? '1fr 1fr' : '1fr', gap: '10px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', color: 'var(--text-secondary)' }}>
+                Microphone
+              </label>
+              <select
+                value={selectedAudioId}
+                onChange={(e) => setSelectedAudioId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  background: '#121722',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.8rem',
+                  outline: 'none',
+                }}
+              >
+                {audioDevices.length === 0 && <option value="">Default Microphone</option>}
+                {audioDevices.map((d) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {!isAudioOnly && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', color: 'var(--text-secondary)' }}>
+                  Camera
+                </label>
+                <select
+                  value={selectedVideoId}
+                  onChange={(e) => setSelectedVideoId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    background: '#121722',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.8rem',
+                    outline: 'none',
+                  }}
+                >
+                  {videoDevices.length === 0 && <option value="">Default Camera</option>}
+                  {videoDevices.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Join or Cancel buttons */}
-        <div style={{ display: 'flex', width: '100%', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', width: '100%', gap: '12px' }}>
           <button
             onClick={onCancel}
             style={{

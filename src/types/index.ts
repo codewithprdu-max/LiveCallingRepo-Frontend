@@ -100,3 +100,25 @@ export function normalizeCall(call: any): Call {
     status,
   };
 }
+
+export interface ChatMessage {
+  id: string;
+  callId: string;
+  senderUserId: string;
+  senderDisplayName: string;
+  senderAvatarUrl: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface MediaStateUpdate {
+  userId: string;
+  isAudioMuted: boolean;
+  isVideoMuted: boolean;
+  isScreenSharing: boolean;
+}
+
+export interface MediaDeviceInfoOption {
+  deviceId: string;
+  label: string;
+}
