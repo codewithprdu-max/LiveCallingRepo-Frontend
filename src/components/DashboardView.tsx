@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import type { CallType, User } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useCall } from '../context/CallContext';
 import {
   Phone,
   Video,
@@ -12,7 +11,6 @@ import {
   Sparkles,
   Cloud,
   Loader2,
-  Plus
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -21,7 +19,6 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) => {
   const { user } = useAuth();
-  const { } = useCall();
   const [contacts, setContacts] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,40 +73,71 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px 24px' }}>
+    <div style={{
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: '0 clamp(14px, 3vw, 24px) 60px clamp(14px, 3vw, 24px)',
+    }}>
       {/* Hero Banner */}
       <div className="glass-panel" style={{
-        padding: '36px',
-        marginBottom: '32px',
+        padding: 'clamp(24px, 4vw, 36px)',
+        marginBottom: 'clamp(20px, 3vw, 32px)',
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: '24px',
         position: 'relative',
         overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(20, 27, 44, 0.8) 0%, rgba(14, 19, 31, 0.9) 100%)',
       }}>
-        <div style={{ zIndex: 2, maxWidth: '650px' }}>
+        {/* Glow ambient background element */}
+        <div style={{
+          position: 'absolute',
+          top: '-30px',
+          left: '20%',
+          width: '260px',
+          height: '260px',
+          background: 'rgba(99, 102, 241, 0.15)',
+          borderRadius: '50%',
+          filter: 'blur(70px)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ zIndex: 2, flex: '1 1 360px', maxWidth: '650px' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
             padding: '4px 12px',
             borderRadius: '999px',
-            background: 'rgba(99, 102, 241, 0.15)',
+            background: 'rgba(99, 102, 241, 0.18)',
             color: 'var(--accent-primary)',
             fontSize: '0.8rem',
             fontWeight: 600,
             marginBottom: '12px',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
           }}>
             <Sparkles size={14} /> WebRTC & Selective Forwarding Unit (SFU)
           </div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px', lineHeight: 1.2 }}>
+          <h1 style={{
+            fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)',
+            fontWeight: 800,
+            marginBottom: '10px',
+            lineHeight: 1.2,
+            letterSpacing: '-0.03em',
+          }}>
             Welcome back, {user?.displayName}
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.6 }}>
-            Connect instantly with crystal-clear audio, HD video, and group conference calling powered by LiveSwitch Cloud and ASP.NET Core .NET 10.
+          <p style={{
+            color: 'var(--text-secondary)',
+            fontSize: 'clamp(0.88rem, 1.8vw, 1rem)',
+            lineHeight: 1.6,
+          }}>
+            Connect instantly with crystal-clear audio, HD video, real-time chat, screen sharing, and group conference calling powered by LiveSwitch Cloud and ASP.NET Core .NET 10.
           </p>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '20px', flexWrap: 'wrap' }}>
             <button
               onClick={() => setShowGroupModal(true)}
               style={{
@@ -119,13 +147,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
                 padding: '12px 22px',
                 borderRadius: '10px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                 color: '#ffffff',
                 fontWeight: 600,
-                fontSize: '0.95rem',
+                fontSize: '0.92rem',
                 cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
-                transition: 'transform 0.15s ease',
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.45)',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
               onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
@@ -138,49 +166,71 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
 
         {/* LiveSwitch Cloud Status Widget */}
         <div style={{
-          background: 'rgba(0, 0, 0, 0.35)',
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(12px)',
           padding: '20px',
           borderRadius: '14px',
           border: '1px solid var(--border-color)',
-          minWidth: '280px',
+          flex: '1 1 280px',
+          maxWidth: '360px',
           zIndex: 2,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Cloud size={18} color="var(--accent-primary)" />
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              LiveSwitch Cloud
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Cloud size={18} color="var(--accent-primary)" />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                LiveSwitch Gateway
+              </span>
+            </div>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.72rem',
+              color: 'var(--success)',
+              fontWeight: 600,
+              background: 'rgba(16, 185, 129, 0.15)',
+              padding: '2px 8px',
+              borderRadius: '999px',
+            }}>
+              <CheckCircle2 size={12} /> Active
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Gateway:</span>
-              <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>
-                {liveSwitchConfig?.gatewayUrl || 'cloud.liveswitch.io'}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Gateway Host:</span>
+              <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)', fontWeight: 600 }}>
+                {liveSwitchConfig?.gatewayUrl ? 'cloud.liveswitch.io' : 'cloud.liveswitch.io'}
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Application:</span>
-              <span style={{ fontFamily: 'monospace', color: 'var(--accent-primary)' }}>
-                {liveSwitchConfig?.applicationId || 'liveswitch-app'}
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Signaling:</span>
+              <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>SignalR WebSockets</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Status:</span>
-              <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                <CheckCircle2 size={12} /> Ready
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Media Router:</span>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>LiveSwitch SFU (Audio/Video)</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Contacts Section */}
-      <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Contacts Section Header with Responsive Search */}
+      <div style={{
+        marginBottom: '20px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '14px',
+      }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 700 }}>Available Contacts</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Select a contact below to start a 1:1 audio or video call
+          <h2 style={{ fontSize: 'clamp(1.2rem, 2.5vw, 1.45rem)', fontWeight: 700 }}>
+            Available Contacts
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+            Start a 1:1 direct audio or video call with anyone online
           </p>
         </div>
 
@@ -188,17 +238,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '10px',
           background: 'rgba(255, 255, 255, 0.05)',
           border: '1px solid var(--border-color)',
           borderRadius: '10px',
           padding: '8px 14px',
-          width: '280px',
+          width: '100%',
+          maxWidth: '320px',
+          flex: '1 1 240px',
         }}>
           <Search size={16} color="var(--text-muted)" />
           <input
             type="text"
-            placeholder="Search contacts..."
+            placeholder="Search by name or username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -206,7 +258,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
               border: 'none',
               outline: 'none',
               color: 'var(--text-primary)',
-              fontSize: '0.9rem',
+              fontSize: '0.88rem',
               width: '100%',
             }}
           />
@@ -224,43 +276,78 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
       ) : (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: '20px',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: '16px',
         }}>
           {filteredContacts.map((contact) => (
             <div
               key={contact.id}
               className="glass-panel"
               style={{
-                padding: '20px',
+                padding: '16px 18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                transition: 'all 0.2s ease',
+                gap: '12px',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--glass-border)')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--glass-border)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <img
-                  src={contact.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                  alt={contact.displayName}
-                  style={{
-                    width: '48px',
-                    height: '48px',
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <img
+                    src={contact.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                    alt={contact.displayName}
+                    style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid rgba(255, 255, 255, 0.12)',
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '1px',
+                    right: '1px',
+                    width: '11px',
+                    height: '11px',
                     borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                />
-                <div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 600 }}>{contact.displayName}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{contact.username}</p>
+                    background: 'var(--success)',
+                    border: '2px solid #07090e',
+                  }} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <h4 style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {contact.displayName}
+                  </h4>
+                  <p style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--text-muted)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    @{contact.username}
+                  </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                 <button
                   onClick={() => handleStartDirectCall(contact, 'Audio')}
                   style={{
@@ -279,14 +366,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'var(--accent-primary)';
                     e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.transform = 'scale(1.08)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
                     e.currentTarget.style.color = 'var(--accent-primary)';
+                    e.currentTarget.style.transform = 'scale(1)';
                   }}
                   title="Start Audio Call"
                 >
-                  <Phone size={18} />
+                  <Phone size={17} />
                 </button>
 
                 <button
@@ -307,14 +396,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'var(--success)';
                     e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.transform = 'scale(1.08)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)';
                     e.currentTarget.style.color = 'var(--success)';
+                    e.currentTarget.style.transform = 'scale(1)';
                   }}
                   title="Start Video Call"
                 >
-                  <Video size={18} />
+                  <Video size={17} />
                 </button>
               </div>
             </div>
@@ -330,143 +421,163 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.82)',
+          backdropFilter: 'blur(10px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 90,
-          padding: '20px',
+          padding: '16px',
         }}>
           <div className="glass-panel" style={{
             width: '100%',
             maxWidth: '520px',
-            padding: '28px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: 'clamp(20px, 3vw, 28px)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '20px',
+            gap: '18px',
+            background: 'rgba(14, 19, 31, 0.98)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.7)',
           }}>
             <div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '4px' }}>Create Group Call</h3>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '4px' }}>
+                Create Group Call
+              </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Invite multiple participants into an SFU channel
+                Invite multiple users into a shared LiveSwitch video conference
               </p>
             </div>
 
+            {/* Room Title */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>
-                Call Topic / Title
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                Meeting Title (Optional)
               </label>
               <input
                 type="text"
-                placeholder="e.g. Design Sprint Sync"
+                placeholder="e.g. Design Sprint or Weekly Catchup"
                 value={groupTitle}
                 onChange={(e) => setGroupTitle(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(0, 0, 0, 0.3)',
+                  background: 'rgba(0, 0, 0, 0.4)',
                   border: '1px solid var(--border-color)',
                   color: 'var(--text-primary)',
-                  fontSize: '0.9rem',
+                  fontSize: '0.88rem',
                   outline: 'none',
                 }}
               />
             </div>
 
+            {/* Call Type Selector */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>
-                Media Mode
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                Call Mode
               </label>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <button
                   type="button"
                   onClick={() => setGroupCallType('Group')}
                   style={{
-                    flex: 1,
-                    padding: '8px',
+                    padding: '10px',
                     borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: groupCallType === 'Group' ? 'var(--accent-primary)' : 'var(--border-color)',
+                    background: groupCallType === 'Group' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    color: groupCallType === 'Group' ? 'var(--accent-primary)' : 'var(--text-secondary)',
                     fontWeight: 600,
                     fontSize: '0.85rem',
-                    background: groupCallType === 'Group' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-                    color: groupCallType === 'Group' ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
                   }}
                 >
-                  Video & Audio Group
+                  <Video size={16} /> Video Conference
                 </button>
                 <button
                   type="button"
                   onClick={() => setGroupCallType('Audio')}
                   style={{
-                    flex: 1,
-                    padding: '8px',
+                    padding: '10px',
                     borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: groupCallType === 'Audio' ? 'var(--accent-primary)' : 'var(--border-color)',
+                    background: groupCallType === 'Audio' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    color: groupCallType === 'Audio' ? 'var(--accent-primary)' : 'var(--text-secondary)',
                     fontWeight: 600,
                     fontSize: '0.85rem',
-                    background: groupCallType === 'Audio' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-                    color: groupCallType === 'Audio' ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
                   }}
                 >
-                  Audio Only Conference
+                  <Phone size={16} /> Audio Only
                 </button>
               </div>
             </div>
 
+            {/* Select Participants */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                 Select Participants ({selectedUserIds.length} selected)
               </label>
               <div style={{
-                maxHeight: '200px',
+                maxHeight: '180px',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px',
-                paddingRight: '6px',
+                padding: '4px',
               }}>
-                {contacts.map((c) => {
-                  const isSelected = selectedUserIds.includes(c.id);
+                {contacts.map((contact) => {
+                  const isSelected = selectedUserIds.includes(contact.id);
                   return (
                     <div
-                      key={c.id}
-                      onClick={() => toggleSelectUser(c.id)}
+                      key={contact.id}
+                      onClick={() => toggleSelectUser(contact.id)}
                       style={{
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid',
+                        borderColor: isSelected ? 'var(--accent-primary)' : 'var(--border-color)',
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                        border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <img
-                          src={c.avatarUrl}
-                          alt={c.displayName}
-                          style={{ width: '30px', height: '30px', borderRadius: '50%' }}
+                          src={contact.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                          alt={contact.displayName}
+                          style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }}
                         />
-                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{c.displayName}</span>
+                        <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{contact.displayName}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>@{contact.username}</div>
+                        </div>
                       </div>
-
                       <div style={{
                         width: '20px',
                         height: '20px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        border: isSelected ? 'none' : '2px solid var(--text-muted)',
                         background: isSelected ? 'var(--accent-primary)' : 'transparent',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#ffffff',
                       }}>
-                        {isSelected && <CheckCircle2 size={14} />}
+                        {isSelected && <CheckCircle2 size={16} color="#ffffff" />}
                       </div>
                     </div>
                   );
@@ -474,8 +585,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
               <button
+                type="button"
                 onClick={() => {
                   setShowGroupModal(false);
                   setSelectedUserIds([]);
@@ -487,32 +600,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onInitiateCall }) 
                   border: '1px solid var(--border-color)',
                   background: 'transparent',
                   color: 'var(--text-secondary)',
-                  cursor: 'pointer',
                   fontWeight: 600,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
                 }}
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleCreateGroupCall}
                 disabled={selectedUserIds.length === 0}
                 style={{
-                  flex: 1,
+                  flex: 2,
                   padding: '10px',
                   borderRadius: '8px',
                   border: 'none',
                   background: selectedUserIds.length > 0 ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.1)',
                   color: '#ffffff',
-                  cursor: selectedUserIds.length > 0 ? 'pointer' : 'not-allowed',
                   fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
+                  fontSize: '0.9rem',
+                  cursor: selectedUserIds.length > 0 ? 'pointer' : 'default',
+                  boxShadow: selectedUserIds.length > 0 ? '0 4px 14px rgba(99, 102, 241, 0.4)' : 'none',
                 }}
               >
-                <Plus size={16} />
-                Start Group ({selectedUserIds.length})
+                Start Call ({selectedUserIds.length})
               </button>
             </div>
           </div>

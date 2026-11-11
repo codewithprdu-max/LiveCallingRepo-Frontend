@@ -105,8 +105,8 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({ onAnswer }
           <button
             onClick={() => rejectCall(incomingCall.id)}
             style={{
-              width: '64px',
-              height: '64px',
+              width: 'clamp(54px, 14vw, 64px)',
+              height: 'clamp(54px, 14vw, 64px)',
               borderRadius: '50%',
               border: 'none',
               background: 'linear-gradient(135deg, #ef4444, #dc2626)',
@@ -122,15 +122,15 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({ onAnswer }
             onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             title="Decline"
           >
-            <PhoneOff size={26} />
+            <PhoneOff size={24} />
           </button>
 
           {/* Accept Button */}
           <button
             onClick={handleAccept}
             style={{
-              width: '64px',
-              height: '64px',
+              width: 'clamp(54px, 14vw, 64px)',
+              height: 'clamp(54px, 14vw, 64px)',
               borderRadius: '50%',
               border: 'none',
               background: 'linear-gradient(135deg, #10b981, #059669)',
@@ -146,7 +146,7 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({ onAnswer }
             onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             title="Accept"
           >
-            <Phone size={26} />
+            <Phone size={24} />
           </button>
         </div>
       </div>

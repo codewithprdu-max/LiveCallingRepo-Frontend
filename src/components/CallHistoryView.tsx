@@ -82,145 +82,260 @@ export const CallHistoryView: React.FC = () => {
           <p style={{ fontSize: '0.9rem', marginTop: '4px' }}>Start an audio or video call to see history here.</p>
         </div>
       ) : (
-        <div className="glass-panel" style={{ overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderBottom: '1px solid var(--border-color)',
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
-                <th style={{ padding: '16px 20px' }}>Call Title & Type</th>
-                <th style={{ padding: '16px 20px' }}>Participants</th>
-                <th style={{ padding: '16px 20px' }}>Date</th>
-                <th style={{ padding: '16px 20px' }}>Duration</th>
-                <th style={{ padding: '16px 20px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((call) => {
-                const isAudio = call.callType === 'Audio';
-                const isGroup = call.callType === 'Group';
+        <>
+          {/* Desktop Table View */}
+          <div className="glass-panel history-desktop-table" style={{ overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderBottom: '1px solid var(--border-color)',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>
+                  <th style={{ padding: '16px 20px' }}>Call Title & Type</th>
+                  <th style={{ padding: '16px 20px' }}>Participants</th>
+                  <th style={{ padding: '16px 20px' }}>Date</th>
+                  <th style={{ padding: '16px 20px' }}>Duration</th>
+                  <th style={{ padding: '16px 20px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((call) => {
+                  const isAudio = call.callType === 'Audio';
+                  const isGroup = call.callType === 'Group';
 
-                return (
-                  <tr
-                    key={call.id}
-                    style={{
-                      borderBottom: '1px solid var(--border-color)',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Call Title & Type */}
-                    <td style={{ padding: '16px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '8px',
-                          background: isAudio
-                            ? 'rgba(99, 102, 241, 0.15)'
-                            : isGroup
-                            ? 'rgba(168, 85, 247, 0.15)'
-                            : 'rgba(16, 185, 129, 0.15)',
-                          color: isAudio
-                            ? 'var(--accent-primary)'
-                            : isGroup
-                            ? '#a855f7'
-                            : 'var(--success)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}>
-                          {isAudio && <Phone size={18} />}
-                          {!isAudio && !isGroup && <Video size={18} />}
-                          {isGroup && <Users size={18} />}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{call.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{call.callType} Call</div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Participants Avatars */}
-                    <td style={{ padding: '16px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {call.participants.slice(0, 4).map((p, index) => (
-                          <img
-                            key={p.userId}
-                            src={p.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                            alt={p.displayName}
-                            title={p.displayName}
-                            style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '50%',
-                              objectFit: 'cover',
-                              border: '2px solid #121722',
-                              marginLeft: index > 0 ? '-8px' : 0,
-                            }}
-                          />
-                        ))}
-                        {call.participants.length > 4 && (
-                          <span style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-muted)',
-                            marginLeft: '6px',
+                  return (
+                    <tr
+                      key={call.id}
+                      style={{
+                        borderBottom: '1px solid var(--border-color)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {/* Call Title & Type */}
+                      <td style={{ padding: '16px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '8px',
+                            background: isAudio
+                              ? 'rgba(99, 102, 241, 0.15)'
+                              : isGroup
+                              ? 'rgba(168, 85, 247, 0.15)'
+                              : 'rgba(16, 185, 129, 0.15)',
+                            color: isAudio
+                              ? 'var(--accent-primary)'
+                              : isGroup
+                              ? '#a855f7'
+                              : 'var(--success)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}>
-                            +{call.participants.length - 4}
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                            {isAudio && <Phone size={18} />}
+                            {!isAudio && !isGroup && <Video size={18} />}
+                            {isGroup && <Users size={18} />}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{call.title}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{call.callType} Call</div>
+                          </div>
+                        </div>
+                      </td>
 
-                    {/* Date */}
-                    <td style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Calendar size={14} color="var(--text-muted)" />
-                        <span>{formatDate(call.createdAt)}</span>
-                      </div>
-                    </td>
+                      {/* Participants Avatars */}
+                      <td style={{ padding: '16px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          {call.participants.slice(0, 4).map((p, index) => (
+                            <img
+                              key={p.userId}
+                              src={p.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                              alt={p.displayName}
+                              title={p.displayName}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '2px solid #121722',
+                                marginLeft: index > 0 ? '-8px' : 0,
+                              }}
+                            />
+                          ))}
+                          {call.participants.length > 4 && (
+                            <span style={{
+                              fontSize: '0.75rem',
+                              color: 'var(--text-muted)',
+                              marginLeft: '6px',
+                            }}>
+                              +{call.participants.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Duration */}
-                    <td style={{ padding: '16px 20px', fontSize: '0.85rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Clock size={14} color="var(--text-muted)" />
+                      {/* Date */}
+                      <td style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Calendar size={14} color="var(--text-muted)" />
+                          <span>{formatDate(call.createdAt)}</span>
+                        </div>
+                      </td>
+
+                      {/* Duration */}
+                      <td style={{ padding: '16px 20px', fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Clock size={14} color="var(--text-muted)" />
+                          <span>{formatDuration(call.durationSeconds)}</span>
+                        </div>
+                      </td>
+
+                      {/* Status Badge */}
+                      <td style={{ padding: '16px 20px' }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: '999px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          background: call.status === 'Ended'
+                            ? 'rgba(16, 185, 129, 0.15)'
+                            : call.status === 'InProgress'
+                            ? 'rgba(99, 102, 241, 0.15)'
+                            : 'rgba(239, 68, 68, 0.15)',
+                          color: call.status === 'Ended'
+                            ? 'var(--success)'
+                            : call.status === 'InProgress'
+                            ? 'var(--accent-primary)'
+                            : 'var(--danger)',
+                        }}>
+                          {call.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card List View */}
+          <div className="history-mobile-cards">
+            {history.map((call) => {
+              const isAudio = call.callType === 'Audio';
+              const isGroup = call.callType === 'Group';
+
+              return (
+                <div key={call.id} className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        flexShrink: 0,
+                        background: isAudio
+                          ? 'rgba(99, 102, 241, 0.15)'
+                          : isGroup
+                          ? 'rgba(168, 85, 247, 0.15)'
+                          : 'rgba(16, 185, 129, 0.15)',
+                        color: isAudio
+                          ? 'var(--accent-primary)'
+                          : isGroup
+                          ? '#a855f7'
+                          : 'var(--success)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {isAudio && <Phone size={18} />}
+                        {!isAudio && !isGroup && <Video size={18} />}
+                        {isGroup && <Users size={18} />}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {call.title}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{call.callType} Call</div>
+                      </div>
+                    </div>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      background: call.status === 'Ended'
+                        ? 'rgba(16, 185, 129, 0.15)'
+                        : call.status === 'InProgress'
+                        ? 'rgba(99, 102, 241, 0.15)'
+                        : 'rgba(239, 68, 68, 0.15)',
+                      color: call.status === 'Ended'
+                        ? 'var(--success)'
+                        : call.status === 'InProgress'
+                        ? 'var(--accent-primary)'
+                        : 'var(--danger)',
+                    }}>
+                      {call.status}
+                    </span>
+                  </div>
+
+                  {/* Details row: Participants & Date & Duration */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '10px',
+                    borderTop: '1px solid var(--border-color)',
+                    fontSize: '0.78rem',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    {/* Avatars */}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {call.participants.slice(0, 3).map((p, index) => (
+                        <img
+                          key={p.userId}
+                          src={p.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                          alt={p.displayName}
+                          title={p.displayName}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid #121722',
+                            marginLeft: index > 0 ? '-6px' : 0,
+                          }}
+                        />
+                      ))}
+                      {call.participants.length > 3 && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '4px' }}>
+                          +{call.participants.length - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={13} color="var(--text-muted)" />
                         <span>{formatDuration(call.durationSeconds)}</span>
                       </div>
-                    </td>
-
-                    {/* Status Badge */}
-                    <td style={{ padding: '16px 20px' }}>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '999px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        background: call.status === 'Ended'
-                          ? 'rgba(16, 185, 129, 0.15)'
-                          : call.status === 'InProgress'
-                          ? 'rgba(99, 102, 241, 0.15)'
-                          : 'rgba(239, 68, 68, 0.15)',
-                        color: call.status === 'Ended'
-                          ? 'var(--success)'
-                          : call.status === 'InProgress'
-                          ? 'var(--accent-primary)'
-                          : 'var(--danger)',
-                      }}>
-                        {call.status}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Calendar size={13} color="var(--text-muted)" />
+                        <span>{formatDate(call.createdAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
